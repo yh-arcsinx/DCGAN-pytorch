@@ -19,7 +19,7 @@ print("Random Seed: ", seed)
 # Parameters to define the model.
 params = {
     "bsize" : 64,# Batch size during training.
-    'imsize' : [501,197],# Spatial size of training images. All images will be resized to this size during preprocessing.
+    'imsize' : [197,501],# Spatial size of training images. All images will be resized to this size during preprocessing.
     'nc' : 3,# Number of channles in the training images. For coloured images this is 3.
     'nz' : 100,# Size of the Z latent vector (the input to the generator).
     'ngf' : 64,# Size of feature maps in the generator. The depth will be multiples of this.
@@ -65,7 +65,7 @@ print(netD)
 # Binary Cross Entropy loss function.
 criterion = nn.BCELoss()
 
-fixed_noise = torch.randn(64, params['nz'], 1, 1, device=device)
+fixed_noise = torch.randn(64, params['nz'],  device=device)
 
 real_label = 1
 fake_label = 0
@@ -97,16 +97,17 @@ for epoch in range(params['nepochs']):
         # Make accumalated gradients of the discriminator zero.
         netD.zero_grad()
         # Create labels for the real data. (label=1)
-        label = torch.full((b_size, ), real_label, device=device) #torch.Size([64])
+        label = torch.full((b_size, ), real_label, device=device).to(torch.float32)  #torch.Size([64])
         get=netD(real_data)
         output = netD(real_data).view(-1)  #torch.Size([16128])
+
         errD_real = criterion(output, label)
         # Calculate gradients for backpropagation.
         errD_real.backward()
         D_x = output.mean().item()
         
         # Sample random data from a unit normal distribution.
-        noise = torch.randn(b_size, params['nz'], 1, 1, device=device)
+        noise = torch.randn(b_size, params['nz'], device=device)
         # Generate fake data (images).
         fake_data = netG(noise)
         # Create labels for fake data. (label=0)
@@ -118,6 +119,8 @@ for epoch in range(params['nepochs']):
         # This is done because the loss functions for the discriminator
         # and the generator are slightly different.
         output = netD(fake_data.detach()).view(-1)
+        output=output.to(torch.float32)
+        label=label.to(torch.float32) 
         errD_fake = criterion(output, label)
         # Calculate gradients for backpropagation.
         errD_fake.backward()
@@ -135,7 +138,9 @@ for epoch in range(params['nepochs']):
         label.fill_(real_label)
         # No detach() is used here as we want to calculate the gradients w.r.t.
         # the generator this time.
-        output = netD(fake_data).view(-1)
+        output = netD(fake_data).view(-1).to(torch.float32)
+
+
         errG = criterion(output, label)
         # Gradients for backpropagation are calculated.
         # Gradients w.r.t. both the generator and the discriminator
@@ -149,7 +154,7 @@ for epoch in range(params['nepochs']):
         optimizerG.step()
 
         # Check progress of training.
-        if i%50 == 0:
+        if i%1 == 0:
             print(torch.cuda.is_available())
             print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
                   % (epoch, params['nepochs'], i, len(dataloader),
