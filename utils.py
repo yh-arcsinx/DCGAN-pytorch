@@ -16,12 +16,16 @@ def get_celeba(params):
         transforms.Resize(params['imsize']),
         transforms.CenterCrop(params['imsize']),
         transforms.ToTensor(),
+        # transforms.LinearTransformation()
         transforms.Normalize((0.5, 0.5, 0.5),
-            (0.5, 0.5, 0.5))])
+            (0.5, 0.5, 0.5))
+        ])
 
     # Create the dataset.
     dataset = dset.ImageFolder(root=root, transform=transform)
-
+    # b=dataset
+    # for i in range(len(dataset)):
+    #     dataset[i]=(dataset[i][0]/177.5-1,dataset[i][1])
     # Create the dataloader.
     dataloader = torch.utils.data.DataLoader(dataset,
         batch_size=params['bsize'],
